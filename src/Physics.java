@@ -16,6 +16,7 @@ public class Physics {
 	
 	void propagate() {
 		
-		time += timeStep;
+		time += timeStep;		
+		if(time > timeMax) time = 0.0;
 	}
 }

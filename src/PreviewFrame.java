@@ -1,18 +1,23 @@
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.BasicStroke;
-import javax.swing.JFrame;
-import javax.swing.Timer;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.util.Iterator;
+
+import javax.swing.JFrame;
+import javax.swing.Timer;
+import javax.swing.WindowConstants;
 
 public class PreviewFrame extends JFrame {
 	
-	Creature creature;
-	Timer timer;
+	private Creature creature;
+	private BufferedImage buffer;
+	
+	public Timer timer;
 	
 	final int updateEveryMilliseconds = 33;
 	
@@ -22,7 +27,14 @@ public class PreviewFrame extends JFrame {
 		creature = _creature;
 		creature.setToStart();
 		
-		initializeTimer();
+		setSize((int)Creature.SIZE_MAX.getX(), (int)Creature.SIZE_MAX.getY());
+		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		//setUndecorated(true);
+		setVisible(true);
+		
+		buffer = new BufferedImage(this.getWidth(), this.getHeight(), BufferedImage.TYPE_INT_RGB);
+		
+		initializeTimer();	
 		timer.start();
 	}
 	
@@ -32,12 +44,21 @@ public class PreviewFrame extends JFrame {
 		ActionListener taskPerformer = new ActionListener() {
 			public void actionPerformed(ActionEvent evt) {
 				
+				if(creature.physics.time < creature.physics.timeStep) {
+					creature.setToStart();
+					timer.restart();
+				}
 				creature.physics.propagate();
 				creature.move();
-				update(getGraphics());
+				
+				// Buffering to avoid flickering image:
+				update(buffer.getGraphics());
+				getGraphics().drawImage(buffer, 0, 0, null);
 		    }
 		};
+			
 		timer = new Timer(updateEveryMilliseconds, taskPerformer);
+		timer.setInitialDelay(1000);
 	}
 	
 // Painting:
@@ -62,11 +83,33 @@ public class PreviewFrame extends JFrame {
     	int w = getWidth();
     	int h = getHeight();
     	
-    	g.setColor(Color.GREEN);
+    	Color colorGround = new Color(50,175,50);
+    	g.setColor(colorGround);
     	g.fillRect((int)(-center.getX() - w), (int)yCoord(-center.getY()), 2*w, 2*h);
     	
-    	g.setColor(Color.CYAN);
+    	Color colorSky = new Color(75,125,255);
+    	g.setColor(colorSky);
     	g.fillRect((int)(-center.getX() - w), (int)yCoord(-center.getY()+2*h), 2*w, 2*h);
+    	
+    	g.setColor(Color.GRAY);
+    	int markDist = 50;   	
+    	int markWidth = 4;
+    	int markHeight = 16;
+    	int centerX = (int)creature.getCenter().getX();;
+    	int offset = centerX % markDist;
+    	
+    	int nMarks = getWidth() / markDist;
+    	for(int i=-nMarks/2; i<nMarks/2; i++) {
+    		int x = centerX + i*markDist + offset;
+    		g.fillRect((int)(x - 0.5*markWidth - center.getX()),
+    				   (int)yCoord(markHeight - center.getY()),
+    				   markWidth, markHeight);
+    	}
+    	
+    	/*g.setColor(Color.BLACK);
+    	g.fillRect((int)(centerX - markWidth - center.getX() + offset),
+    			   (int)yCoord(2*markHeight - center.getY()),
+    			   2*markWidth, 2*markHeight);*/    			   
 	}
 	
 	private void paintCreature(Graphics g) {

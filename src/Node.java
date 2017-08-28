@@ -1,6 +1,7 @@
 
 public class Node {
 	public XYPoint pos, vel;
+	public final XYPoint startPos;
 	
 	public double friction;
 	public double mass, radius;
@@ -14,6 +15,7 @@ public class Node {
 			    double _friction, double _mass, double _radius) {
 		
 		pos = _pos;
+		startPos = new XYPoint(_pos);
 		vel = _vel;
 		friction = _friction;
 		mass = _mass;
@@ -26,6 +28,12 @@ public class Node {
 	public boolean isOnGround() {
 		
 		return onGround;
+	}
+	
+	public void setToStart() {
+		
+		pos = new XYPoint(startPos);
+		onGround = pos.getY() <= radius;
 	}
 	
 	public void moveBy(XYPoint delta) {

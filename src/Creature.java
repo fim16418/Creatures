@@ -107,6 +107,8 @@ public class Creature {
 		while (iterator.hasNext()) {			
 			Node node = iterator.next();
 			
+			node.setToStart();
+			
 			if(node.pos.getY() < minY) {
 				minY = node.pos.getY();
 				radius = node.radius;
@@ -174,7 +176,7 @@ public class Creature {
 			
 			if(node.isOnGround()) {
 				node.vel.data.x *= 1 - node.friction;
-				node.vel.data.y = 0.0;
+				node.vel.data.y = Math.max(0.0, node.vel.data.y);
 			}
 		}
 	}
@@ -201,7 +203,7 @@ public class Creature {
 			double vy = node.vel.getY();
 			
 			double acceleration = vx*vx + vy*vy;
-			acceleration *= -node.friction / node.mass;
+			acceleration *= -physics.airFriction / node.mass;
 			
 			double angle = Math.atan2(vy, vx);
 			
