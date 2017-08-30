@@ -14,9 +14,19 @@ public class Physics {
 		airFriction = _airFriction;
 	}
 	
+	public Physics(Physics other) {
+		
+		time = other.time;
+		timeStep = other.timeStep;
+		timeMax = other.timeMax;
+		gravity = other.gravity;
+		airFriction = other.airFriction;
+	}
+	
 	void propagate() {
 		
-		time += timeStep;		
-		if(time > timeMax) time = 0.0;
+		if(time < timeMax) {
+			time += timeStep;	
+		}	
 	}
 }

@@ -19,6 +19,45 @@ public class Creature {
 		alive = false;
 	}
 	
+	public Creature(Creature other) {
+		
+		physics = new Physics(other.physics);
+		alive = other.alive;
+		
+		Iterator<Muscle> iteratorM = other.muscles.iterator();
+		while (iteratorM.hasNext()) {			
+			Muscle otherMuscle = iteratorM.next();
+			
+			Muscle muscle = new Muscle(otherMuscle);
+			this.muscles.add(muscle);
+		}
+		
+		Iterator<Node> iteratorN = other.nodes.iterator();
+		while (iteratorN.hasNext()) {			
+			Node otherNode = iteratorN.next();
+			
+			Node node = new Node(otherNode);
+			this.nodes.add(node);
+		}
+		
+		// Connect Muscles to Nodes:
+		for(int i=0; i<other.muscles.size(); i++) {
+			Muscle otherMuscle = other.muscles.get(i);
+			Node otherNode0 = otherMuscle.getNode(0);
+			Node otherNode1 = otherMuscle.getNode(1);
+			
+			for(int j=0; j<other.nodes.size(); j++) {
+				Node tmpNode = other.nodes.get(j);
+				
+				if(tmpNode == otherNode0) {
+					this.muscles.get(i).nodes[0] = this.nodes.get(j);
+				} else if(tmpNode == otherNode1) {
+					this.muscles.get(i).nodes[1] = this.nodes.get(j);
+				}
+			}
+		}
+	}
+	
 // Get:
 	public XYPoint getCenter() {
 		
@@ -66,31 +105,19 @@ public class Creature {
 		
 		for(int i=0; i<nNodes; i++) {
 			
-			XYPoint pos = new XYPoint(Math.random() * INITIAL_SIZE_MAX.getX(),
-									  Math.random() * INITIAL_SIZE_MAX.getY());
-			XYPoint vel = new XYPoint(Math.random(), Math.random());
-			double fric = Math.random();
-			double mass = Math.random() * Node.MASS_MAX;
-			double rad  = Math.random() * Node.RADIUS_MAX;
-			
-			nodes.add(new Node(pos,vel,fric,mass,rad));
+			Node newNode = new Node();
+			newNode.randomize();			
+			nodes.add(newNode);
 		}
 		
 		for(int i=0; i<nNodes; i++) {
 			
-	        double stren = Math.random() * Muscle.STRENGTH_MAX;
-	        double cycleT = Math.random() * Muscle.CYCLE_TIME_MAX;
-	        double contractS = Math.random() * cycleT;
-	        double contractT = Math.random() * cycleT;
-	        double lenMax = Math.random() * Muscle.LEN_MAX;
-	        double lenMin = Math.random() * (lenMax-Muscle.LEN_MIN) + Muscle.LEN_MIN;
-
-	        Node node1 = nodes.get(i);
-	        Node node2 = nodes.get((i+1)%nNodes);
+	        Node node0 = nodes.get(i);
+	        Node node1 = nodes.get((i+1)%nNodes);
 	        
-	        muscles.add(new Muscle(node1, node2, stren,
-	        					   cycleT, contractS, contractT,
-	        					   lenMin, lenMax));
+	        Muscle newMuscle = new Muscle(node0, node1);
+	        newMuscle.randomize();
+	        muscles.add(newMuscle);
 	    }
 		
 		alive = checkIfAlive();
@@ -99,7 +126,9 @@ public class Creature {
 // Controllers:
 	public void setToStart() {
 		
-		double minY = 9999999;
+		physics.time = 0.0;
+		
+		double minY = Double.MAX_VALUE;
 	    double radius = 0.0;
 	    double centerX = 0.0;
 	    
@@ -131,6 +160,8 @@ public class Creature {
 	
 	public void move() {
 		
+		physics.propagate();
+		
 		if(!alive) return;
 		
 		updateVel();
@@ -145,6 +176,46 @@ public class Creature {
 		}
 		
 		alive = checkIfAlive();
+	}
+	
+// Mutate:
+	public void mutate(MutationParameters params) {
+		
+		Iterator<Muscle> iteratorM = muscles.iterator();
+		while (iteratorM.hasNext()) {			
+			Muscle muscle = iteratorM.next();
+			
+			if(Math.random() < params.mutate) {			
+				muscle.mutate(params);
+			}
+		}
+		
+		Iterator<Node> iteratorN = nodes.iterator();
+		while (iteratorN.hasNext()) {			
+			Node node = iteratorN.next();
+			
+			if(Math.random() < params.mutate) {				
+				node.mutate(params);
+			}
+		}
+		
+		if(Math.random() < params.newMuscle) {			
+			addMuscle();
+		}
+		
+		if(Math.random() < params.newNode) {			
+			addNode();
+		}
+		
+		if(Math.random() < params.removeMuscle) {
+			removeMuscle();
+		}
+		
+		if(Math.random() < params.removeNode) {
+			removeNode();
+		}
+		
+		checkIfAlive();
 	}
 	
 // Helper:
@@ -226,5 +297,92 @@ public class Creature {
 		
 		XYPoint size = getSize();		
 		return (size.getX() <= SIZE_MAX.getX() && size.getY() <= SIZE_MAX.getY());
+	}
+	
+	private void addMuscle() {
+		
+		// Choose nodes:
+		int nNodes = nodes.size();
+		int node0 = (int)(Math.random() * nNodes);
+		int node1 = (int)(Math.random() * (nNodes-1));
+		if(node0 == node1) {
+			node1 = nNodes-1;
+		}
+		
+		Node n0 = nodes.get(node0);
+		Node n1 = nodes.get(node1);
+		
+		// Check if muscle already exists:
+		Iterator<Muscle> iteratorM = muscles.iterator();
+		while (iteratorM.hasNext()) {			
+			Muscle muscle = iteratorM.next();
+							
+			if((muscle.nodes[0] == n0 && muscle.nodes[1] == n1) ||
+			   (muscle.nodes[0] == n1 && muscle.nodes[1] == n0)) {
+					return;
+			}
+		}
+		
+		addMuscleTo(n0, n1);
+	}
+	
+	private void addMuscleTo(Node n0, Node n1) {
+		
+		Muscle newMuscle = new Muscle(n0, n1);
+		newMuscle.randomize();
+		muscles.add(newMuscle);
+	}
+	
+	private void addNode() {
+		
+		Node newNode = new Node();
+		newNode.randomize();
+				
+		int nNodes = nodes.size();
+		int node0 = (int)(Math.random() * nNodes);
+		int node1 = (int)(Math.random() * (nNodes-1));
+		if(node0 == node1) {
+			node1 = nNodes-1;
+		}
+		
+		Node n0 = nodes.get(node0);
+		Node n1 = nodes.get(node1);
+		
+		addMuscleTo(newNode, n0);
+		addMuscleTo(newNode, n1);
+		nodes.add(newNode);		
+	}
+	
+	private void removeMuscle() {
+		
+		int nMuscles = muscles.size();
+		int rand = (int)(Math.random() * nMuscles);
+		muscles.remove(rand);
+	}
+	
+	private void removeNode() {
+		
+		int nNodes = nodes.size();
+		int rand = (int)(Math.random() * nNodes);
+		Node node = nodes.get(rand);
+		
+		ArrayList<Muscle> deleteList = new ArrayList<Muscle>();
+		
+		Iterator<Muscle> iteratorM = muscles.iterator();
+		while (iteratorM.hasNext()) {			
+			Muscle muscle = iteratorM.next();
+			
+			if(muscle.nodes[0] == node || muscle.nodes[1] == node) {
+				deleteList.add(muscle);
+			}
+		}
+		
+		Iterator<Muscle> iterator = deleteList.iterator();
+		while(iterator.hasNext()) {
+			Muscle m = iterator.next();		
+			muscles.remove(m);
+		}
+		
+		nodes.remove(rand);
 	}
 }

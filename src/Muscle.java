@@ -1,3 +1,4 @@
+import java.util.Random;
 
 public class Muscle {
 	
@@ -5,20 +6,27 @@ public class Muscle {
 	public double cycleTime, contractStart, contractTime;
 	public double lenMin, lenMax;
 	
-	private Node[] nodes = new Node[2];
+	public Node[] nodes = new Node[2];
 	
 	final static double STRENGTH_MAX = 100.0;
 	final static double CYCLE_TIME_MAX = 10.0;
 	final static double LEN_MIN = 5.0;
 	final static double LEN_MAX = 100.0;
 	
-	public Muscle(Node node1, Node node2,
+// Constructors:
+	public Muscle(Node node0, Node node1) {
+		
+		nodes[0] = node0;
+		nodes[1] = node1;
+	}
+	
+	public Muscle(Node node0, Node node1,
 				  double _strength, double _cycleTime,
 				  double _contractStart, double _contractTime,
 				  double _lenMin, double _lenMax) {
 		
-		nodes[0] = node1;
-		nodes[1] = node2;
+		nodes[0] = node0;
+		nodes[1] = node1;
 		strength = _strength;
 		cycleTime = _cycleTime;
 		contractStart = _contractStart;
@@ -27,6 +35,30 @@ public class Muscle {
 		lenMax = _lenMax;
 	}
 	
+	public Muscle(Muscle other) {
+		
+		strength = other.strength;
+		cycleTime = other.cycleTime;
+		contractStart = other.contractStart;
+		contractTime = other.contractTime;
+		lenMin = other.lenMin;
+		lenMax = other.lenMax;
+		
+		//nodes done in Creature(Creature other)
+	}
+	
+// Manipulation:
+	public void randomize() {
+		
+		strength = Math.random() * STRENGTH_MAX;
+        cycleTime = Math.random() * CYCLE_TIME_MAX;
+        contractStart = Math.random() * cycleTime;
+        contractTime = Math.random() * cycleTime;
+        lenMax = Math.random() * (LEN_MAX-LEN_MIN) + LEN_MIN;
+        lenMin = Math.random() * (lenMax-LEN_MIN) + LEN_MIN;
+	}
+	
+// Computations:
 	public void getForces(XYPoint onNode0, XYPoint onNode1, double time) {
 	// Calculates the forces on the nodes at the given time
 		
@@ -62,6 +94,7 @@ public class Muscle {
 	    onNode1.setY( dir*modifiedStrength*Math.sin(angle));
 	}
 	
+// Getters:
 	public Node getNode(int i) {
 		return nodes[i];
 	}
@@ -73,5 +106,33 @@ public class Muscle {
 
 	    return (time >= cycleStart+contractStart && time < cycleStart+contractStart+contractTime) ||
 	           (time >= cycleStart-cycleTime+contractStart && time < cycleStart-cycleTime+contractStart+contractTime);
+	}
+	
+// Mutation:
+	public void mutate(MutationParameters params) {
+		
+		Random r = new Random();
+		
+		int rand = (int)(Math.random() * 6.0);
+		switch(rand) {
+			case(0): strength += r.nextGaussian() * params.stdDeviation * STRENGTH_MAX;
+					 strength = Math.min(STRENGTH_MAX, Math.max(0.0, strength));
+					 break;
+			case(1): cycleTime += r.nextGaussian() * params.stdDeviation * CYCLE_TIME_MAX;
+					 cycleTime = Math.min(CYCLE_TIME_MAX, Math.max(0.0, cycleTime));
+					 break;
+			case(2): contractStart += r.nextGaussian() * params.stdDeviation * cycleTime;
+					 contractStart = Math.min(cycleTime, Math.max(0.0, contractStart));
+			 	 	 break;
+			case(3): contractTime += r.nextGaussian() * params.stdDeviation * cycleTime;
+					 contractTime = Math.min(cycleTime, Math.max(0.0, contractTime));
+			 		 break;
+			case(4): lenMin += r.nextGaussian() * params.stdDeviation * (lenMax-LEN_MIN);
+					 lenMin = Math.min(lenMax, Math.max(LEN_MIN, lenMin));
+					 break;
+			case(5): lenMax += r.nextGaussian() * params.stdDeviation * (LEN_MAX-lenMin);
+					 lenMax = Math.min(LEN_MAX, Math.max(lenMin, lenMax));
+			 		 break;
+		}
 	}
 }

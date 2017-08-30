@@ -20,6 +20,7 @@ public class PreviewFrame extends JFrame {
 	public Timer timer;
 	
 	final int updateEveryMilliseconds = 33;
+	final int initialDelayMilliseconds = 1000;
 	
 // Constructor:
 	public PreviewFrame(Creature _creature) {
@@ -29,13 +30,12 @@ public class PreviewFrame extends JFrame {
 		
 		setSize((int)Creature.SIZE_MAX.getX(), (int)Creature.SIZE_MAX.getY());
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		//setUndecorated(true);
+		setUndecorated(true);
 		setVisible(true);
 		
 		buffer = new BufferedImage(this.getWidth(), this.getHeight(), BufferedImage.TYPE_INT_RGB);
 		
 		initializeTimer();	
-		timer.start();
 	}
 	
 // Constructor helpers:
@@ -44,21 +44,37 @@ public class PreviewFrame extends JFrame {
 		ActionListener taskPerformer = new ActionListener() {
 			public void actionPerformed(ActionEvent evt) {
 				
-				if(creature.physics.time < creature.physics.timeStep) {
-					creature.setToStart();
-					timer.restart();
-				}
-				creature.physics.propagate();
-				creature.move();
-				
-				// Buffering to avoid flickering image:
-				update(buffer.getGraphics());
-				getGraphics().drawImage(buffer, 0, 0, null);
+				if(creature.physics.time >= creature.physics.timeMax) {
+					restartAnimation();
+				} else {
+					creature.move();
+					
+					// Buffering to avoid flickering image:
+					update(buffer.getGraphics());
+					getGraphics().drawImage(buffer, 0, 0, null);
+				}		
 		    }
 		};
 			
 		timer = new Timer(updateEveryMilliseconds, taskPerformer);
-		timer.setInitialDelay(1000);
+		timer.setInitialDelay(initialDelayMilliseconds);
+	}
+	
+// Animations:
+	public void startAnimation() {
+		
+		timer.start();
+	}
+	
+	public void stopAnimation() {
+		
+		timer.stop();
+	}
+	
+	public void restartAnimation() {
+		
+		creature.setToStart();
+		timer.restart();
 	}
 	
 // Painting:
@@ -69,6 +85,7 @@ public class PreviewFrame extends JFrame {
 		
 		paintWorld(g);
 		paintCreature(g);
+		paintStats(g);
 	}
 	
 // Painting helpers:	
@@ -83,33 +100,38 @@ public class PreviewFrame extends JFrame {
     	int w = getWidth();
     	int h = getHeight();
     	
+    	// Ground:
     	Color colorGround = new Color(50,175,50);
     	g.setColor(colorGround);
-    	g.fillRect((int)(-center.getX() - w), (int)yCoord(-center.getY()), 2*w, 2*h);
+    	g.fillRect(-w, (int)yCoord(-center.getY()), 3*w, 2*h);
     	
+    	// Sky:
     	Color colorSky = new Color(75,125,255);
     	g.setColor(colorSky);
-    	g.fillRect((int)(-center.getX() - w), (int)yCoord(-center.getY()+2*h), 2*w, 2*h);
+    	g.fillRect(-w, (int)yCoord(-center.getY()+2*h), 3*w, 2*h);
     	
+    	// Marks:
     	g.setColor(Color.GRAY);
     	int markDist = 50;   	
     	int markWidth = 4;
     	int markHeight = 16;
-    	int centerX = (int)creature.getCenter().getX();;
+    	int centerX = (int)creature.getCenter().getX();
     	int offset = centerX % markDist;
     	
-    	int nMarks = getWidth() / markDist;
+    	// Small marks:
+    	int nMarks = getWidth() / markDist + 10;
     	for(int i=-nMarks/2; i<nMarks/2; i++) {
-    		int x = centerX + i*markDist + offset;
+    		int x = centerX + i*markDist - offset;
     		g.fillRect((int)(x - 0.5*markWidth - center.getX()),
     				   (int)yCoord(markHeight - center.getY()),
     				   markWidth, markHeight);
     	}
     	
-    	/*g.setColor(Color.BLACK);
-    	g.fillRect((int)(centerX - markWidth - center.getX() + offset),
+    	// Start mark:
+    	g.setColor(Color.BLACK);
+    	g.fillRect((int)(-markWidth - center.getX()),
     			   (int)yCoord(2*markHeight - center.getY()),
-    			   2*markWidth, 2*markHeight);*/    			   
+    			   2*markWidth, 2*markHeight);    			   
 	}
 	
 	private void paintCreature(Graphics g) {
@@ -122,6 +144,7 @@ public class PreviewFrame extends JFrame {
 	    	XYPoint screenCenter = new XYPoint(0.5*getWidth(), 0.5*getHeight());
 	    	center.subtract(screenCenter);
 	    	
+	    	// Muscles:
 	    	Iterator<Muscle> iteratorM = creature.muscles.iterator();
 			while (iteratorM.hasNext()) {			
 				Muscle muscle = iteratorM.next();
@@ -142,6 +165,7 @@ public class PreviewFrame extends JFrame {
 						   (int)yCoord(node1.pos.getY() - center.getY()));
 			}
 			
+			// Nodes:
 			Iterator<Node> iteratorN = creature.nodes.iterator();
 			while (iteratorN.hasNext()) {			
 				Node node = iteratorN.next();
@@ -161,9 +185,20 @@ public class PreviewFrame extends JFrame {
 			g.setFont(new Font("Dialog", Font.PLAIN, 50));
 	    	g.setColor(Color.RED);
 	    	g.drawString("DEAD", (int)(0.5*getWidth())-75, (int)(0.5*getHeight()));
-		}
+		}		
+	}
+	
+	private void paintStats(Graphics g) {
 		
-		
+		g.setFont(new Font("Dialog", Font.PLAIN, 16));
+    	g.setColor(Color.BLACK);
+    	
+    	int time = (int)(creature.physics.time / creature.physics.timeMax * 100.0);
+    	double distance = creature.getCenter().getX();
+    	String timeString = String.format("Time: %2d %%", time);
+    	g.drawString(timeString, 10, 20);
+    	String distanceString = String.format("Distance: %.2f", distance);
+    	g.drawString(distanceString, 10, 40);
 	}
 	
 	private double yCoord(double y) {
