@@ -43,7 +43,8 @@ public class GenePool {
 	
 	public void newGeneration() {
 		
-		killAndReplace();
+		//killAndReplace();
+		killAndBreed();
 		evolve();
 		computeFitness();
 		sort();
@@ -103,30 +104,96 @@ public class GenePool {
 			
 			int other = nCreatures-i-1;
 			
-			//double chanceToWin = (fitness[i]>fitness[nCreatures-i-1]) ? 1.0 : 0.0; // fitness[i] / (fitness[i] + fitness[nCreatures-i-1]);
-			double chanceToWin;
-			if(creatures[other].alive) {
-				chanceToWin = (nCreatures-i) / nCreatures;
+			if(creatures[i].alive) {
+				
+				double chanceToWin;
+				if(creatures[other].alive) {
+					chanceToWin = (nCreatures-i) / nCreatures;
+				} else {
+					chanceToWin = 1.0;
+				}
+				
+				int winner, loser;
+				if(Math.random() < chanceToWin) {
+					winner = i;
+					loser = other;
+				} else {
+					winner = other;
+					loser = i;
+				}
+				
+				if(Math.random() < mp.random) {
+					creatures[loser] = new Creature(new Physics(physics));
+				} else {
+					creatures[loser] = new Creature(creatures[winner]);
+				}
 			} else {
-				chanceToWin = 1.0;
-			}
+				
+				creatures[i] = new Creature(new Physics(physics));
+				creatures[other] = new Creature(new Physics(physics));
+			}		
+		}
+	}
+	
+	private void killAndBreed() {
+		
+		for(int i=0; i<nCreatures/2; i++) {
+		
+			int parent1 = i;
+			int parent2 = (int)(Math.random() * (nCreatures/2));
+			int child = nCreatures/2 + i;
 			
-			int winner, loser;
-			if(Math.random() < chanceToWin) {
-				winner = i;
-				loser = other;
-			} else {
-				winner = other;
-				loser = i;
-			}
-			
-			//int loser = nCreatures-i-1;
 			if(Math.random() < mp.random) {
-				creatures[loser] = new Creature(new Physics(physics));
-			} else {
-				creatures[loser] = new Creature(creatures[winner]);
+				creatures[child] = new Creature(new Physics(physics));
+			} else {				
+				if(!creatures[parent1].alive && !creatures[parent1].alive) {				
+					creatures[child] = new Creature(new Physics(physics));
+				} else if(!creatures[parent1].alive) {
+					creatures[child] = new Creature(creatures[parent2]);
+				} else if(!creatures[parent2].alive) {
+					creatures[child] = new Creature(creatures[parent1]);
+				} else { // both alive					
+					Creature p1 = creatures[parent1];
+					Creature p2 = creatures[parent2];
+					
+					if(Math.random() < 0.5) {
+						p1 = creatures[parent2];
+						p2 = creatures[parent1];
+					}
+					
+					creatures[child] = breedChild(p1, p2);
+				}
 			}
 		}
+	}
+	
+	private Creature breedChild(Creature parent1, Creature parent2) {
+		
+		Creature child = new Creature(parent1);
+		
+		int minNumNodes = Math.min(parent1.nodes.size(), parent2.nodes.size());
+		for(int i=0; i<minNumNodes; i++) {
+			
+			if(Math.random() < 0.5) {
+				Node childNode  = child.nodes.get(i);
+				Node parentNode = parent2.nodes.get(i);
+				
+				childNode.copy(parentNode);
+			}
+		}
+		
+		int minNumMuscles = Math.min(parent1.muscles.size(), parent2.muscles.size());
+		for(int i=0; i<minNumMuscles; i++) {
+			
+			if(Math.random() < 0.5) {
+				Muscle childMuscle  = child.muscles.get(i);
+				Muscle parentMuscle = parent2.muscles.get(i);
+				
+				childMuscle.copy(parentMuscle);
+			}
+		}
+		
+		return child;
 	}
 	
 	private void evolve() {

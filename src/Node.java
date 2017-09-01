@@ -54,6 +54,17 @@ public class Node {
 		onGround = pos.getY() <= radius;
 	}
 	
+	public void copy(Node other) {
+		
+		pos.setLocation(other.pos);
+		vel.setLocation(other.vel);
+		startPos.setLocation(other.startPos);
+		friction = other.friction;
+		mass = other.mass;
+		radius = other.radius;
+		onGround = other.onGround;
+	}
+	
 // Getter:
 	public boolean isOnGround() {
 		

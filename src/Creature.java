@@ -278,8 +278,8 @@ public class Creature {
 			
 			double angle = Math.atan2(vy, vx);
 			
-			int dir0 = (vx > 0) ? 1 : -1;
-	        int dir1 = (vy > 0) ? 1 : -1;
+			int dirX = (vx > 0) ? 1 : -1;
+	        int dirY = (vy > 0) ? 1 : -1;
 			
 			XYPoint deltaVel = new XYPoint(acceleration * Math.cos(angle) * physics.timeStep,
 										   acceleration * Math.sin(angle) * physics.timeStep);
@@ -288,8 +288,8 @@ public class Creature {
 			// Air friction cannot invert movement:
 			vx = node.vel.getX();
 			vy = node.vel.getY();
-	        if(vx * dir0 < 0) node.vel.setX(0.0);
-	        if(vy * dir1 < 0) node.vel.setY(0.0);
+	        if(vx * dirX < 0) node.vel.setX(0.0);
+	        if(vy * dirY < 0) node.vel.setY(0.0);
 		}
 	}
 	

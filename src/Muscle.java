@@ -44,7 +44,7 @@ public class Muscle {
 		lenMin = other.lenMin;
 		lenMax = other.lenMax;
 		
-		//nodes done in Creature(Creature other)
+		//nodes connected in Creature(Creature other)
 	}
 	
 // Manipulation:
@@ -56,6 +56,18 @@ public class Muscle {
         contractTime = Math.random() * cycleTime;
         lenMax = Math.random() * (LEN_MAX-LEN_MIN) + LEN_MIN;
         lenMin = Math.random() * (lenMax-LEN_MIN) + LEN_MIN;
+	}
+	
+	public void copy(Muscle other) {
+		
+		strength = other.strength;
+		cycleTime = other.cycleTime;
+		contractStart = other.contractStart;
+		contractTime = other.contractTime;
+		lenMin = other.lenMin;
+		lenMax = other.lenMax;
+		
+		// nodes not copied !
 	}
 	
 // Computations:
